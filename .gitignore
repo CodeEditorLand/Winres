@@ -1,6 +1,7 @@
 /.idea/
 /target/
 /example/target
+Cargo.lock
 *~
 *.bk
 /*.lib
