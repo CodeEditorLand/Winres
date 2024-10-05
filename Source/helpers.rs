@@ -6,8 +6,11 @@ use std::{
 	path::Path,
 };
 
-pub(crate) fn parse_cargo_toml(props: &mut HashMap<String, String>) -> io::Result<()> {
-	let cargo = Path::new(&env::var("CARGO_MANIFEST_DIR").unwrap()).join("Cargo.toml");
+pub(crate) fn parse_cargo_toml(
+	props:&mut HashMap<String, String>,
+) -> io::Result<()> {
+	let cargo =
+		Path::new(&env::var("CARGO_MANIFEST_DIR").unwrap()).join("Cargo.toml");
 	let mut f = File::open(cargo)?;
 	let mut cargo_toml = String::new();
 	f.read_to_string(&mut cargo_toml)?;
@@ -21,11 +24,17 @@ pub(crate) fn parse_cargo_toml(props: &mut HashMap<String, String>) -> io::Resul
 							if let Some(v) = v.as_str() {
 								props.insert(k.clone(), v.to_string());
 							} else {
-								println!("package.metadata.tauri-winres.{} is not a string", k);
+								println!(
+									"package.metadata.tauri-winres.{} is not \
+									 a string",
+									k
+								);
 							}
 						}
 					} else {
-						println!("package.metadata.tauri-winres is not a table");
+						println!(
+							"package.metadata.tauri-winres is not a table"
+						);
 					}
 				} else {
 					println!("package.metadata.tauri-winres does not exist");
@@ -42,7 +51,7 @@ pub(crate) fn parse_cargo_toml(props: &mut HashMap<String, String>) -> io::Resul
 	Ok(())
 }
 
-pub(crate) fn escape_string(string: &str) -> String {
+pub(crate) fn escape_string(string:&str) -> String {
 	let mut escaped = String::new();
 	for chr in string.chars() {
 		// In quoted RC strings, double-quotes are escaped by using two

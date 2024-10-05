@@ -1,6 +1,7 @@
 extern crate winapi;
 
 use std::ffi::CString;
+
 use winapi::um::winuser::{MessageBoxA, MB_ICONINFORMATION, MB_OK};
 
 fn main() {

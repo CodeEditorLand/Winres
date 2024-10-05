@@ -1,11 +1,13 @@
 //! Rust Windows resource helper
 //!
 //! This crate implements a simple generator for Windows resource (.rc) files
-//! for use with either Microsoft `rc.exe` resource compiler or with GNU `windres.exe`
+//! for use with either Microsoft `rc.exe` resource compiler or with GNU
+//! `windres.exe`
 //!
-//! The [`WindowsResorce::compile()`] method is intended to be used from a build script and
-//! needs environment variables from cargo to be set. It not only compiles the resource
-//! but directs cargo to link the resource compiler's output.
+//! The [`WindowsResorce::compile()`] method is intended to be used from a build
+//! script and needs environment variables from cargo to be set. It not only
+//! compiles the resource but directs cargo to link the resource compiler's
+//! output.
 //!
 //! # Example
 //!
@@ -27,19 +29,21 @@
 //!
 //! # Defaults
 //!
-//! We try to guess some sensible default values from Cargo's build time environement variables
-//! This is described in [`WindowsResource::new()`]. Furthermore we have to know where to find the
-//! resource compiler for the MSVC Toolkit. This can be done by looking up a registry key but
-//! for MinGW this has to be done manually.
+//! We try to guess some sensible default values from Cargo's build time
+//! environement variables This is described in [`WindowsResource::new()`].
+//! Furthermore we have to know where to find the resource compiler for the MSVC
+//! Toolkit. This can be done by looking up a registry key but for MinGW this
+//! has to be done manually.
 //!
 //! The following paths are the hardcoded defaults:
 //! MSVC the last registry key at
-//! `HKLM\SOFTWARE\Microsoft\Windows Kits\Installed Roots`, for MinGW we try our luck by simply
-//! using the `%PATH%` environment variable.
+//! `HKLM\SOFTWARE\Microsoft\Windows Kits\Installed Roots`, for MinGW we try our
+//! luck by simply using the `%PATH%` environment variable.
 //!
-//! Note that the toolkit bitness as to match the one from the current Rust compiler. If you are
-//! using Rust GNU 64-bit you have to use MinGW64. For MSVC this is simpler as (recent) Windows
-//! SDK always installs both versions on a 64-bit system.
+//! Note that the toolkit bitness as to match the one from the current Rust
+//! compiler. If you are using Rust GNU 64-bit you have to use MinGW64. For MSVC
+//! this is simpler as (recent) Windows SDK always installs both versions on a
+//! 64-bit system.
 //!
 //! [`WindowsResorce::compile()`]: struct.WindowsResource.html#method.compile
 //! [`WindowsResource::new()`]: struct.WindowsResource.html#method.new
@@ -48,7 +52,9 @@ mod helpers;
 
 use std::{
 	collections::HashMap,
-	env, fs, io,
+	env,
+	fs,
+	io,
 	io::prelude::*,
 	path::{Path, PathBuf},
 };
@@ -79,20 +85,20 @@ pub enum VersionInfo {
 
 #[derive(Debug)]
 struct Icon {
-	path: String,
-	name_id: String,
+	path:String,
+	name_id:String,
 }
 
 #[derive(Debug)]
 pub struct WindowsResource {
-	properties: HashMap<String, String>,
-	version_info: HashMap<VersionInfo, u64>,
-	rc_file: Option<String>,
-	icons: Vec<Icon>,
-	language: u16,
-	manifest: Option<String>,
-	manifest_file: Option<String>,
-	append_rc_content: String,
+	properties:HashMap<String, String>,
+	version_info:HashMap<VersionInfo, u64>,
+	rc_file:Option<String>,
+	icons:Vec<Icon>,
+	language:u16,
+	manifest:Option<String>,
+	manifest_file:Option<String>,
+	append_rc_content:String,
 }
 
 #[allow(clippy::new_without_default)]
@@ -110,14 +116,14 @@ impl WindowsResource {
 	/// | `"FileDescription"`  | `package.description`        |
 	///
 	/// Furthermore if a section `package.metadata.tauri-winres` exists
-	/// in `Cargo.toml` it will be parsed. Values in this section take precedence
-	/// over the values provided natively by cargo. Only the string table
-	/// of the version struct can be set this way.
+	/// in `Cargo.toml` it will be parsed. Values in this section take
+	/// precedence over the values provided natively by cargo. Only the string
+	/// table of the version struct can be set this way.
 	/// Additionally, the language field is set to neutral (i.e. `0`)
 	/// and no icon is set. These settings have to be done programmatically.
 	///
-	/// `Cargo.toml` files have to be written in UTF-8, so we support all valid UTF-8 strings
-	/// provided.
+	/// `Cargo.toml` files have to be written in UTF-8, so we support all valid
+	/// UTF-8 strings provided.
 	///
 	/// ```,toml
 	/// #Cargo.toml
@@ -139,33 +145,49 @@ impl WindowsResource {
 	/// | `FILESUBTYPE`        | `VFT2_UNKNOWN (0x0)`         |
 	/// | `FILEFLAGSMASK`      | `VS_FFI_FILEFLAGSMASK (0x3F)`|
 	/// | `FILEFLAGS`          | `0x0`                        |
-	///
 	pub fn new() -> Self {
-		let mut props: HashMap<String, String> = HashMap::new();
-		let mut ver: HashMap<VersionInfo, u64> = HashMap::new();
+		let mut props:HashMap<String, String> = HashMap::new();
+		let mut ver:HashMap<VersionInfo, u64> = HashMap::new();
 
-		props.insert("FileVersion".to_string(), env::var("CARGO_PKG_VERSION").unwrap());
-		props.insert("ProductVersion".to_string(), env::var("CARGO_PKG_VERSION").unwrap());
-		props.insert("ProductName".to_string(), env::var("CARGO_PKG_NAME").unwrap());
+		props.insert(
+			"FileVersion".to_string(),
+			env::var("CARGO_PKG_VERSION").unwrap(),
+		);
+		props.insert(
+			"ProductVersion".to_string(),
+			env::var("CARGO_PKG_VERSION").unwrap(),
+		);
+		props.insert(
+			"ProductName".to_string(),
+			env::var("CARGO_PKG_NAME").unwrap(),
+		);
 		// If there is no description, fallback to name
-		let description = if let Ok(description) = env::var("CARGO_PKG_DESCRIPTION") {
-			if !description.is_empty() {
-				description
+		let description =
+			if let Ok(description) = env::var("CARGO_PKG_DESCRIPTION") {
+				if !description.is_empty() {
+					description
+				} else {
+					env::var("CARGO_PKG_NAME").unwrap()
+				}
 			} else {
 				env::var("CARGO_PKG_NAME").unwrap()
-			}
-		} else {
-			env::var("CARGO_PKG_NAME").unwrap()
-		};
+			};
 		props.insert("FileDescription".to_string(), description);
 
 		parse_cargo_toml(&mut props).unwrap();
 
 		let mut version = 0_u64;
-		version |= env::var("CARGO_PKG_VERSION_MAJOR").unwrap().parse().unwrap_or(0) << 48;
-		version |= env::var("CARGO_PKG_VERSION_MINOR").unwrap().parse().unwrap_or(0) << 32;
-		version |= env::var("CARGO_PKG_VERSION_PATCH").unwrap().parse().unwrap_or(0) << 16;
-		// version |= env::var("CARGO_PKG_VERSION_PRE").unwrap().parse().unwrap_or(0);
+		version |=
+			env::var("CARGO_PKG_VERSION_MAJOR").unwrap().parse().unwrap_or(0)
+				<< 48;
+		version |=
+			env::var("CARGO_PKG_VERSION_MINOR").unwrap().parse().unwrap_or(0)
+				<< 32;
+		version |=
+			env::var("CARGO_PKG_VERSION_PATCH").unwrap().parse().unwrap_or(0)
+				<< 16;
+		// version |=
+		// env::var("CARGO_PKG_VERSION_PRE").unwrap().parse().unwrap_or(0);
 		ver.insert(VersionInfo::FILEVERSION, version);
 		ver.insert(VersionInfo::PRODUCTVERSION, version);
 		ver.insert(VersionInfo::FILEOS, 0x00040004);
@@ -175,14 +197,14 @@ impl WindowsResource {
 		ver.insert(VersionInfo::FILEFLAGS, 0);
 
 		WindowsResource {
-			properties: props,
-			version_info: ver,
-			rc_file: None,
-			icons: Vec::new(),
-			language: 0,
-			manifest: None,
-			manifest_file: None,
-			append_rc_content: String::new(),
+			properties:props,
+			version_info:ver,
+			rc_file:None,
+			icons:Vec::new(),
+			language:0,
+			manifest:None,
+			manifest_file:None,
+			append_rc_content:String::new(),
 		}
 	}
 
@@ -206,9 +228,9 @@ impl WindowsResource {
 	/// which should only be set, when the `FILEFLAGS` property is set to
 	/// `VS_FF_PRIVATEBUILD(0x08)` or `VS_FF_SPECIALBUILD(0x20)`
 	///
-	/// It is possible to use arbirtrary field names but Windows Explorer and other
-	/// tools might not show them.
-	pub fn set<'a>(&mut self, name: &'a str, value: &'a str) -> &mut Self {
+	/// It is possible to use arbirtrary field names but Windows Explorer and
+	/// other tools might not show them.
+	pub fn set<'a>(&mut self, name:&'a str, value:&'a str) -> &mut Self {
 		self.properties.insert(name.to_string(), value.to_string());
 		self
 	}
@@ -220,19 +242,19 @@ impl WindowsResource {
 	/// ```
 	/// # use std::io;
 	/// fn main() {
-	///   if cfg!(target_os = "windows") {
-	///     let mut res = tauri_winres::WindowsResource::new();
+	/// 	if cfg!(target_os = "windows") {
+	/// 		let mut res = tauri_winres::WindowsResource::new();
 	/// #   res.set_output_directory(".");
-	///     res.set_language(winapi::um::winnt::MAKELANGID(
-	///         winapi::um::winnt::LANG_ENGLISH,
-	///         winapi::um::winnt::SUBLANG_ENGLISH_US
-	///     ));
-	///     res.compile().unwrap();
-	///   }
+	/// 		res.set_language(winapi::um::winnt::MAKELANGID(
+	/// 			winapi::um::winnt::LANG_ENGLISH,
+	/// 			winapi::um::winnt::SUBLANG_ENGLISH_US,
+	/// 		));
+	/// 		res.compile().unwrap();
+	/// 	}
 	/// }
 	/// ```
-	/// For possible values look at the `winapi::um::winnt` constants, specifically those
-	/// starting with `LANG_` and `SUBLANG_`.
+	/// For possible values look at the `winapi::um::winnt` constants,
+	/// specifically those starting with `LANG_` and `SUBLANG_`.
 	///
 	/// [`MAKELANGID`]: https://docs.rs/winapi/0.3/x86_64-pc-windows-msvc/winapi/um/winnt/fn.MAKELANGID.html
 	/// [`winapi::um::winnt`]: https://docs.rs/winapi/0.3/x86_64-pc-windows-msvc/winapi/um/winnt/index.html#constants
@@ -258,7 +280,7 @@ impl WindowsResource {
 	/// | Breton              | `0x007e` |
 	/// | Scottish Gaelic     | `0x0091` |
 	/// | Romansch            | `0x0017` |
-	pub fn set_language(&mut self, language: u16) -> &mut Self {
+	pub fn set_language(&mut self, language:u16) -> &mut Self {
 		self.language = language;
 		self
 	}
@@ -273,7 +295,7 @@ impl WindowsResource {
 	/// Windows uses `32512` as the default icon ID. See
 	/// [here](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-loadicona)
 	/// for Windows docs demonstrating this.
-	pub fn set_icon(&mut self, path: &str) -> &mut Self {
+	pub fn set_icon(&mut self, path:&str) -> &mut Self {
 		self.set_icon_with_id(path, "32512")
 	}
 
@@ -324,20 +346,28 @@ impl WindowsResource {
 	///    .set_icon_with_id("icon3.icon", "3")
 	///    // ...
 	/// ```
-	pub fn set_icon_with_id<'a>(&mut self, path: &'a str, name_id: &'a str) -> &mut Self {
+	pub fn set_icon_with_id<'a>(
+		&mut self,
+		path:&'a str,
+		name_id:&'a str,
+	) -> &mut Self {
 		self.icons.push(Icon {
-			path: PathBuf::from(path)
+			path:PathBuf::from(path)
 				.canonicalize()
 				.map(|p| p.to_string_lossy().to_string())
 				.unwrap_or(path.to_string()),
-			name_id: name_id.into(),
+			name_id:name_id.into(),
 		});
 		self
 	}
 
 	/// Set a version info struct property
 	/// Currently we only support numeric values; you have to look them up.
-	pub fn set_version_info(&mut self, field: VersionInfo, value: u64) -> &mut Self {
+	pub fn set_version_info(
+		&mut self,
+		field:VersionInfo,
+		value:u64,
+	) -> &mut Self {
 		self.version_info.insert(field, value);
 		self
 	}
@@ -346,8 +376,9 @@ impl WindowsResource {
 	///
 	/// # Example
 	///
-	/// The following manifest will brand the exe as requesting administrator privileges.
-	/// Thus, everytime it is executed, a Windows UAC dialog will appear.
+	/// The following manifest will brand the exe as requesting administrator
+	/// privileges. Thus, everytime it is executed, a Windows UAC dialog will
+	/// appear.
 	///
 	/// ```rust
 	/// let mut res = tauri_winres::WindowsResource::new();
@@ -363,7 +394,7 @@ impl WindowsResource {
 	/// </assembly>
 	/// "#);
 	/// ```
-	pub fn set_manifest(&mut self, manifest: &str) -> &mut Self {
+	pub fn set_manifest(&mut self, manifest:&str) -> &mut Self {
 		self.manifest_file = None;
 		self.manifest = Some(manifest.to_string());
 		self
@@ -375,14 +406,14 @@ impl WindowsResource {
 	///
 	/// [`set_manifest()`]: #method.set_manifest
 	/// [`set_icon()`]: #method.set_icon
-	pub fn set_manifest_file(&mut self, file: &str) -> &mut Self {
+	pub fn set_manifest_file(&mut self, file:&str) -> &mut Self {
 		self.manifest_file = Some(file.to_string());
 		self.manifest = None;
 		self
 	}
 
 	/// Write a resource file with the set values
-	pub fn write_resource_file<P: AsRef<Path>>(&self, path: P) -> io::Result<()> {
+	pub fn write_resource_file<P:AsRef<Path>>(&self, path:P) -> io::Result<()> {
 		let mut f = fs::File::create(path)?;
 
 		// use UTF8 as an encoding
@@ -391,15 +422,17 @@ impl WindowsResource {
 		writeln!(f, "1 VERSIONINFO")?;
 		for (k, v) in self.version_info.iter() {
 			match *k {
-				VersionInfo::FILEVERSION | VersionInfo::PRODUCTVERSION => writeln!(
-					f,
-					"{:?} {}, {}, {}, {}",
-					k,
-					(*v >> 48) as u16,
-					(*v >> 32) as u16,
-					(*v >> 16) as u16,
-					*v as u16
-				)?,
+				VersionInfo::FILEVERSION | VersionInfo::PRODUCTVERSION => {
+					writeln!(
+						f,
+						"{:?} {}, {}, {}, {}",
+						k,
+						(*v >> 48) as u16,
+						(*v >> 32) as u16,
+						(*v >> 16) as u16,
+						*v as u16
+					)?
+				},
 				_ => writeln!(f, "{:?} {:#x}", k, v)?,
 			};
 		}
@@ -407,7 +440,12 @@ impl WindowsResource {
 		writeln!(f, "{{\nBLOCK \"{:04x}04b0\"\n{{", self.language)?;
 		for (k, v) in self.properties.iter() {
 			if !v.is_empty() {
-				writeln!(f, "VALUE \"{}\", \"{}\"", escape_string(k), escape_string(v))?;
+				writeln!(
+					f,
+					"VALUE \"{}\", \"{}\"",
+					escape_string(k),
+					escape_string(v)
+				)?;
 			}
 		}
 		writeln!(f, "}}\n}}")?;
@@ -416,7 +454,12 @@ impl WindowsResource {
 		writeln!(f, "VALUE \"Translation\", {:#x}, 0x04b0", self.language)?;
 		writeln!(f, "}}\n}}")?;
 		for icon in &self.icons {
-			writeln!(f, "{} ICON \"{}\"", escape_string(&icon.name_id), escape_string(&icon.path))?;
+			writeln!(
+				f,
+				"{} ICON \"{}\"",
+				escape_string(&icon.name_id),
+				escape_string(&icon.path)
+			)?;
 		}
 		if let Some(e) = self.version_info.get(&VersionInfo::FILETYPE) {
 			if let Some(manf) = self.manifest.as_ref() {
@@ -438,8 +481,9 @@ impl WindowsResource {
 	///
 	/// We will neither modify this file nor parse its contents. This function
 	/// simply replaces the internaly generated resource file that is passed to
-	/// the compiler. You can use this function to write a resource file yourself.
-	pub fn set_resource_file(&mut self, path: &str) -> &mut Self {
+	/// the compiler. You can use this function to write a resource file
+	/// yourself.
+	pub fn set_resource_file(&mut self, path:&str) -> &mut Self {
 		self.rc_file = Some(path.to_string());
 		self
 	}
@@ -452,8 +496,9 @@ impl WindowsResource {
 	///
 	/// ```rust
 	/// # if cfg!(target_os = "windows") {
-	///     let mut res = tauri_winres::WindowsResource::new();
-	///     res.append_rc_content(r##"sample MENU
+	/// let mut res = tauri_winres::WindowsResource::new();
+	/// res.append_rc_content(
+	/// 	r##"sample MENU
 	/// {
 	///     MENUITEM "&Soup", 100
 	///     MENUITEM "S&alad", 101
@@ -468,13 +513,16 @@ impl WindowsResource {
 	///          }
 	///     }
 	///     MENUITEM "&Dessert", 103
-	/// }"##);
+	/// }"##,
+	/// );
 	/// #    res.compile()?;
 	/// # }
 	/// # Ok::<_, std::io::Error>(())
 	/// ```
-	pub fn append_rc_content(&mut self, content: &str) -> &mut Self {
-		if !(self.append_rc_content.ends_with('\n') || self.append_rc_content.is_empty()) {
+	pub fn append_rc_content(&mut self, content:&str) -> &mut Self {
+		if !(self.append_rc_content.ends_with('\n')
+			|| self.append_rc_content.is_empty())
+		{
 			self.append_rc_content.push('\n');
 		}
 		self.append_rc_content.push_str(content);
@@ -491,7 +539,9 @@ impl WindowsResource {
 	/// `cargo:rustc-link-lib=` and `cargo:rustc-link-search` on the console,
 	/// so that the cargo build script can link the compiled resource file.
 	pub fn compile(&self) -> io::Result<()> {
-		let output = PathBuf::from(env::var("OUT_DIR").unwrap_or_else(|_| ".".to_string()));
+		let output = PathBuf::from(
+			env::var("OUT_DIR").unwrap_or_else(|_| ".".to_string()),
+		);
 		let rc = output.join("resource.rc");
 
 		if let Some(s) = self.rc_file.as_ref() {
@@ -514,8 +564,10 @@ impl WindowsResource {
 	/// Further more we will print the correct statements for
 	/// `cargo:rustc-link-lib=` and `cargo:rustc-link-search` on the console,
 	/// so that the cargo build script can link the compiled resource file.
-	pub fn compile_for(&self, binaries: &[&str]) -> io::Result<()> {
-		let output = PathBuf::from(env::var("OUT_DIR").unwrap_or_else(|_| ".".to_string()));
+	pub fn compile_for(&self, binaries:&[&str]) -> io::Result<()> {
+		let output = PathBuf::from(
+			env::var("OUT_DIR").unwrap_or_else(|_| ".".to_string()),
+		);
 		let rc = output.join("resource.rc");
 
 		if let Some(s) = self.rc_file.as_ref() {
@@ -524,7 +576,11 @@ impl WindowsResource {
 			self.write_resource_file(rc)?;
 		}
 
-		embed_resource::compile_for("resource.rc", binaries, embed_resource::NONE);
+		embed_resource::compile_for(
+			"resource.rc",
+			binaries,
+			embed_resource::NONE,
+		);
 
 		Ok(())
 	}
@@ -534,43 +590,38 @@ impl WindowsResource {
 impl WindowsResource {
 	#[deprecated(
 		since = "0.1.1",
-		note = "This function is no-op! It is now handled by the embed-resource crate."
+		note = "This function is no-op! It is now handled by the \
+		        embed-resource crate."
 	)]
-	pub fn set_toolkit_path(&mut self, _path: &str) -> &mut Self {
-		self
-	}
+	pub fn set_toolkit_path(&mut self, _path:&str) -> &mut Self { self }
 
 	#[deprecated(
 		since = "0.1.1",
-		note = "This function is no-op! It is now handled by the embed-resource crate."
+		note = "This function is no-op! It is now handled by the \
+		        embed-resource crate."
 	)]
-	pub fn set_windres_path(&mut self, _path: &str) -> &mut Self {
-		self
-	}
+	pub fn set_windres_path(&mut self, _path:&str) -> &mut Self { self }
 
 	#[deprecated(
 		since = "0.1.1",
-		note = "This function is no-op! It is now handled by the embed-resource crate."
+		note = "This function is no-op! It is now handled by the \
+		        embed-resource crate."
 	)]
-	pub fn set_ar_path(&mut self, _path: &str) -> &mut Self {
-		self
-	}
+	pub fn set_ar_path(&mut self, _path:&str) -> &mut Self { self }
 
 	#[deprecated(
 		since = "0.1.1",
-		note = "This function is no-op! It is now handled by the embed-resource crate."
+		note = "This function is no-op! It is now handled by the \
+		        embed-resource crate."
 	)]
-	pub fn add_toolkit_include(&mut self, _add: bool) -> &mut Self {
-		self
-	}
+	pub fn add_toolkit_include(&mut self, _add:bool) -> &mut Self { self }
 
 	#[deprecated(
 		since = "0.1.1",
-		note = "This function is no-op! It is now handled by the embed-resource crate."
+		note = "This function is no-op! It is now handled by the \
+		        embed-resource crate."
 	)]
-	pub fn set_output_directory(&mut self, _path: &str) -> &mut Self {
-		self
-	}
+	pub fn set_output_directory(&mut self, _path:&str) -> &mut Self { self }
 }
 
 #[cfg(test)]
@@ -582,6 +633,9 @@ mod tests {
 		assert_eq!(&escape_string(""), "");
 		assert_eq!(&escape_string("foo"), "foo");
 		assert_eq!(&escape_string(r#""Hello""#), r#"""Hello"""#);
-		assert_eq!(&escape_string(r"C:\Program Files\Foobar"), r"C:\\Program Files\\Foobar");
+		assert_eq!(
+			&escape_string(r"C:\Program Files\Foobar"),
+			r"C:\\Program Files\\Foobar"
+		);
 	}
 }
