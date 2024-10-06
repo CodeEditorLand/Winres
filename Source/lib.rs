@@ -15,13 +15,13 @@
 //! # use std::io;
 //! # fn test_main() -> io::Result<()> {
 //! if cfg!(target_os = "windows") {
-//!     let mut res = tauri_winres::WindowsResource::new();
-//!     res.set_icon("test.ico")
+//! 	let mut res = tauri_winres::WindowsResource::new();
+//! 	res.set_icon("test.ico")
 //! #      .set_output_directory(".")
 //!        .set("InternalName", "TEST.EXE")
 //!        // manually set version 1.0.0.0
 //!        .set_version_info(tauri_winres::VersionInfo::PRODUCTVERSION, 0x0001000000000000);
-//!     res.compile()?;
+//! 	res.compile()?;
 //! }
 //! # Ok(())
 //! # }
@@ -149,43 +149,27 @@ impl WindowsResource {
 		let mut props:HashMap<String, String> = HashMap::new();
 		let mut ver:HashMap<VersionInfo, u64> = HashMap::new();
 
-		props.insert(
-			"FileVersion".to_string(),
-			env::var("CARGO_PKG_VERSION").unwrap(),
-		);
-		props.insert(
-			"ProductVersion".to_string(),
-			env::var("CARGO_PKG_VERSION").unwrap(),
-		);
-		props.insert(
-			"ProductName".to_string(),
-			env::var("CARGO_PKG_NAME").unwrap(),
-		);
+		props.insert("FileVersion".to_string(), env::var("CARGO_PKG_VERSION").unwrap());
+		props.insert("ProductVersion".to_string(), env::var("CARGO_PKG_VERSION").unwrap());
+		props.insert("ProductName".to_string(), env::var("CARGO_PKG_NAME").unwrap());
 		// If there is no description, fallback to name
-		let description =
-			if let Ok(description) = env::var("CARGO_PKG_DESCRIPTION") {
-				if !description.is_empty() {
-					description
-				} else {
-					env::var("CARGO_PKG_NAME").unwrap()
-				}
+		let description = if let Ok(description) = env::var("CARGO_PKG_DESCRIPTION") {
+			if !description.is_empty() {
+				description
 			} else {
 				env::var("CARGO_PKG_NAME").unwrap()
-			};
+			}
+		} else {
+			env::var("CARGO_PKG_NAME").unwrap()
+		};
 		props.insert("FileDescription".to_string(), description);
 
 		parse_cargo_toml(&mut props).unwrap();
 
 		let mut version = 0_u64;
-		version |=
-			env::var("CARGO_PKG_VERSION_MAJOR").unwrap().parse().unwrap_or(0)
-				<< 48;
-		version |=
-			env::var("CARGO_PKG_VERSION_MINOR").unwrap().parse().unwrap_or(0)
-				<< 32;
-		version |=
-			env::var("CARGO_PKG_VERSION_PATCH").unwrap().parse().unwrap_or(0)
-				<< 16;
+		version |= env::var("CARGO_PKG_VERSION_MAJOR").unwrap().parse().unwrap_or(0) << 48;
+		version |= env::var("CARGO_PKG_VERSION_MINOR").unwrap().parse().unwrap_or(0) << 32;
+		version |= env::var("CARGO_PKG_VERSION_PATCH").unwrap().parse().unwrap_or(0) << 16;
 		// version |=
 		// env::var("CARGO_PKG_VERSION_PRE").unwrap().parse().unwrap_or(0);
 		ver.insert(VersionInfo::FILEVERSION, version);
@@ -295,9 +279,7 @@ impl WindowsResource {
 	/// Windows uses `32512` as the default icon ID. See
 	/// [here](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-loadicona)
 	/// for Windows docs demonstrating this.
-	pub fn set_icon(&mut self, path:&str) -> &mut Self {
-		self.set_icon_with_id(path, "32512")
-	}
+	pub fn set_icon(&mut self, path:&str) -> &mut Self { self.set_icon_with_id(path, "32512") }
 
 	/// Add an icon with the specified name ID.
 	///
@@ -346,11 +328,7 @@ impl WindowsResource {
 	///    .set_icon_with_id("icon3.icon", "3")
 	///    // ...
 	/// ```
-	pub fn set_icon_with_id<'a>(
-		&mut self,
-		path:&'a str,
-		name_id:&'a str,
-	) -> &mut Self {
+	pub fn set_icon_with_id<'a>(&mut self, path:&'a str, name_id:&'a str) -> &mut Self {
 		self.icons.push(Icon {
 			path:PathBuf::from(path)
 				.canonicalize()
@@ -363,11 +341,7 @@ impl WindowsResource {
 
 	/// Set a version info struct property
 	/// Currently we only support numeric values; you have to look them up.
-	pub fn set_version_info(
-		&mut self,
-		field:VersionInfo,
-		value:u64,
-	) -> &mut Self {
+	pub fn set_version_info(&mut self, field:VersionInfo, value:u64) -> &mut Self {
 		self.version_info.insert(field, value);
 		self
 	}
@@ -382,7 +356,8 @@ impl WindowsResource {
 	///
 	/// ```rust
 	/// let mut res = tauri_winres::WindowsResource::new();
-	/// res.set_manifest(r#"
+	/// res.set_manifest(
+	/// 	r#"
 	/// <assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
 	/// <trustInfo xmlns="urn:schemas-microsoft-com:asm.v3">
 	///     <security>
@@ -392,7 +367,8 @@ impl WindowsResource {
 	///     </security>
 	/// </trustInfo>
 	/// </assembly>
-	/// "#);
+	/// "#,
+	/// );
 	/// ```
 	pub fn set_manifest(&mut self, manifest:&str) -> &mut Self {
 		self.manifest_file = None;
@@ -440,12 +416,7 @@ impl WindowsResource {
 		writeln!(f, "{{\nBLOCK \"{:04x}04b0\"\n{{", self.language)?;
 		for (k, v) in self.properties.iter() {
 			if !v.is_empty() {
-				writeln!(
-					f,
-					"VALUE \"{}\", \"{}\"",
-					escape_string(k),
-					escape_string(v)
-				)?;
+				writeln!(f, "VALUE \"{}\", \"{}\"", escape_string(k), escape_string(v))?;
 			}
 		}
 		writeln!(f, "}}\n}}")?;
@@ -454,12 +425,7 @@ impl WindowsResource {
 		writeln!(f, "VALUE \"Translation\", {:#x}, 0x04b0", self.language)?;
 		writeln!(f, "}}\n}}")?;
 		for icon in &self.icons {
-			writeln!(
-				f,
-				"{} ICON \"{}\"",
-				escape_string(&icon.name_id),
-				escape_string(&icon.path)
-			)?;
+			writeln!(f, "{} ICON \"{}\"", escape_string(&icon.name_id), escape_string(&icon.path))?;
 		}
 		if let Some(e) = self.version_info.get(&VersionInfo::FILETYPE) {
 			if let Some(manf) = self.manifest.as_ref() {
@@ -520,9 +486,7 @@ impl WindowsResource {
 	/// # Ok::<_, std::io::Error>(())
 	/// ```
 	pub fn append_rc_content(&mut self, content:&str) -> &mut Self {
-		if !(self.append_rc_content.ends_with('\n')
-			|| self.append_rc_content.is_empty())
-		{
+		if !(self.append_rc_content.ends_with('\n') || self.append_rc_content.is_empty()) {
 			self.append_rc_content.push('\n');
 		}
 		self.append_rc_content.push_str(content);
@@ -539,9 +503,7 @@ impl WindowsResource {
 	/// `cargo:rustc-link-lib=` and `cargo:rustc-link-search` on the console,
 	/// so that the cargo build script can link the compiled resource file.
 	pub fn compile(&self) -> io::Result<()> {
-		let output = PathBuf::from(
-			env::var("OUT_DIR").unwrap_or_else(|_| ".".to_string()),
-		);
+		let output = PathBuf::from(env::var("OUT_DIR").unwrap_or_else(|_| ".".to_string()));
 		let rc = output.join("resource.rc");
 
 		if let Some(s) = self.rc_file.as_ref() {
@@ -565,9 +527,7 @@ impl WindowsResource {
 	/// `cargo:rustc-link-lib=` and `cargo:rustc-link-search` on the console,
 	/// so that the cargo build script can link the compiled resource file.
 	pub fn compile_for(&self, binaries:&[&str]) -> io::Result<()> {
-		let output = PathBuf::from(
-			env::var("OUT_DIR").unwrap_or_else(|_| ".".to_string()),
-		);
+		let output = PathBuf::from(env::var("OUT_DIR").unwrap_or_else(|_| ".".to_string()));
 		let rc = output.join("resource.rc");
 
 		if let Some(s) = self.rc_file.as_ref() {
@@ -576,11 +536,7 @@ impl WindowsResource {
 			self.write_resource_file(rc)?;
 		}
 
-		embed_resource::compile_for(
-			"resource.rc",
-			binaries,
-			embed_resource::NONE,
-		);
+		embed_resource::compile_for("resource.rc", binaries, embed_resource::NONE);
 
 		Ok(())
 	}
@@ -590,36 +546,31 @@ impl WindowsResource {
 impl WindowsResource {
 	#[deprecated(
 		since = "0.1.1",
-		note = "This function is no-op! It is now handled by the \
-		        embed-resource crate."
+		note = "This function is no-op! It is now handled by the embed-resource crate."
 	)]
 	pub fn set_toolkit_path(&mut self, _path:&str) -> &mut Self { self }
 
 	#[deprecated(
 		since = "0.1.1",
-		note = "This function is no-op! It is now handled by the \
-		        embed-resource crate."
+		note = "This function is no-op! It is now handled by the embed-resource crate."
 	)]
 	pub fn set_windres_path(&mut self, _path:&str) -> &mut Self { self }
 
 	#[deprecated(
 		since = "0.1.1",
-		note = "This function is no-op! It is now handled by the \
-		        embed-resource crate."
+		note = "This function is no-op! It is now handled by the embed-resource crate."
 	)]
 	pub fn set_ar_path(&mut self, _path:&str) -> &mut Self { self }
 
 	#[deprecated(
 		since = "0.1.1",
-		note = "This function is no-op! It is now handled by the \
-		        embed-resource crate."
+		note = "This function is no-op! It is now handled by the embed-resource crate."
 	)]
 	pub fn add_toolkit_include(&mut self, _add:bool) -> &mut Self { self }
 
 	#[deprecated(
 		since = "0.1.1",
-		note = "This function is no-op! It is now handled by the \
-		        embed-resource crate."
+		note = "This function is no-op! It is now handled by the embed-resource crate."
 	)]
 	pub fn set_output_directory(&mut self, _path:&str) -> &mut Self { self }
 }
@@ -633,9 +584,6 @@ mod tests {
 		assert_eq!(&escape_string(""), "");
 		assert_eq!(&escape_string("foo"), "foo");
 		assert_eq!(&escape_string(r#""Hello""#), r#"""Hello"""#);
-		assert_eq!(
-			&escape_string(r"C:\Program Files\Foobar"),
-			r"C:\\Program Files\\Foobar"
-		);
+		assert_eq!(&escape_string(r"C:\Program Files\Foobar"), r"C:\\Program Files\\Foobar");
 	}
 }
