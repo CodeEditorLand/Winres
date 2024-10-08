@@ -3,8 +3,8 @@ name = "tauri-winres"
 description = "Create and set windows icons and metadata for executables"
 version = "0.1.1"
 authors = [
-	"Tauri Programme within The Commons Conservancy",
-	"Max Resch <resch.max@gmail.com>",
+  "Tauri Programme within The Commons Conservancy",
+  "Max Resch <resch.max@gmail.com>"
 ]
 license = "MIT"
 repository = "https://github.com/tauri-apps/winres"
@@ -15,4 +15,4 @@ toml = "0.7"
 embed-resource = "2.1"
 
 [dev-dependencies]
-winapi = { version = "0.3", features = ["winnt"] }
+winapi = { version = "0.3", features = [ "winnt" ] }
