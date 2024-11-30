@@ -8,9 +8,13 @@ use std::{
 
 pub(crate) fn parse_cargo_toml(props:&mut HashMap<String, String>) -> io::Result<()> {
 	let cargo = Path::new(&env::var("CARGO_MANIFEST_DIR").unwrap()).join("Cargo.toml");
+
 	let mut f = File::open(cargo)?;
+
 	let mut cargo_toml = String::new();
+
 	f.read_to_string(&mut cargo_toml)?;
+
 	if let Ok(ml) = cargo_toml.parse::<toml::Value>() {
 		if let Some(pkg) = ml.get("package") {
 			if let Some(pkg) = pkg.get("metadata") {
@@ -18,6 +22,7 @@ pub(crate) fn parse_cargo_toml(props:&mut HashMap<String, String>) -> io::Result
 					if let Some(pkg) = pkg.as_table() {
 						for (k, v) in pkg {
 							// println!("{} {}", k ,v);
+
 							if let Some(v) = v.as_str() {
 								props.insert(k.clone(), v.to_string());
 							} else {
@@ -39,11 +44,13 @@ pub(crate) fn parse_cargo_toml(props:&mut HashMap<String, String>) -> io::Result
 	} else {
 		println!("TOML parsing error")
 	}
+
 	Ok(())
 }
 
 pub(crate) fn escape_string(string:&str) -> String {
 	let mut escaped = String::new();
+
 	for chr in string.chars() {
 		// In quoted RC strings, double-quotes are escaped by using two
 		// consecutive double-quotes.  Other characters are escaped in the
@@ -58,5 +65,6 @@ pub(crate) fn escape_string(string:&str) -> String {
 			_ => escaped.push(chr),
 		};
 	}
+
 	escaped
 }

@@ -6,7 +6,9 @@ use winapi::um::winuser::{MessageBoxA, MB_ICONINFORMATION, MB_OK};
 
 fn main() {
 	let lp_text = CString::new("Hello, world!").unwrap();
+
 	let lp_caption = CString::new("MessageBox Example").unwrap();
+
 	unsafe {
 		MessageBoxA(
 			std::ptr::null_mut(),

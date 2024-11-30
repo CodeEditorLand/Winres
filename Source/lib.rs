@@ -147,10 +147,13 @@ impl WindowsResource {
 	/// | `FILEFLAGS`          | `0x0`                        |
 	pub fn new() -> Self {
 		let mut props:HashMap<String, String> = HashMap::new();
+
 		let mut ver:HashMap<VersionInfo, u64> = HashMap::new();
 
 		props.insert("FileVersion".to_string(), env::var("CARGO_PKG_VERSION").unwrap());
+
 		props.insert("ProductVersion".to_string(), env::var("CARGO_PKG_VERSION").unwrap());
+
 		props.insert("ProductName".to_string(), env::var("CARGO_PKG_NAME").unwrap());
 		// If there is no description, fallback to name
 		let description = if let Ok(description) = env::var("CARGO_PKG_DESCRIPTION") {
@@ -162,21 +165,32 @@ impl WindowsResource {
 		} else {
 			env::var("CARGO_PKG_NAME").unwrap()
 		};
+
 		props.insert("FileDescription".to_string(), description);
 
 		parse_cargo_toml(&mut props).unwrap();
 
 		let mut version = 0_u64;
+
 		version |= env::var("CARGO_PKG_VERSION_MAJOR").unwrap().parse().unwrap_or(0) << 48;
+
 		version |= env::var("CARGO_PKG_VERSION_MINOR").unwrap().parse().unwrap_or(0) << 32;
+
 		version |= env::var("CARGO_PKG_VERSION_PATCH").unwrap().parse().unwrap_or(0) << 16;
 		// version |= env::var("CARGO_PKG_VERSION_PRE").unwrap().parse().unwrap_or(0);
+
 		ver.insert(VersionInfo::FILEVERSION, version);
+
 		ver.insert(VersionInfo::PRODUCTVERSION, version);
+
 		ver.insert(VersionInfo::FILEOS, 0x00040004);
+
 		ver.insert(VersionInfo::FILETYPE, 1);
+
 		ver.insert(VersionInfo::FILESUBTYPE, 0);
+
 		ver.insert(VersionInfo::FILEFLAGSMASK, 0x3F);
+
 		ver.insert(VersionInfo::FILEFLAGS, 0);
 
 		WindowsResource {
@@ -215,6 +229,7 @@ impl WindowsResource {
 	/// other tools might not show them.
 	pub fn set<'a>(&mut self, name:&'a str, value:&'a str) -> &mut Self {
 		self.properties.insert(name.to_string(), value.to_string());
+
 		self
 	}
 
@@ -265,6 +280,7 @@ impl WindowsResource {
 	/// | Romansch            | `0x0017` |
 	pub fn set_language(&mut self, language:u16) -> &mut Self {
 		self.language = language;
+
 		self
 	}
 
@@ -335,6 +351,7 @@ impl WindowsResource {
 				.unwrap_or(path.to_string()),
 			name_id:name_id.into(),
 		});
+
 		self
 	}
 
@@ -342,6 +359,7 @@ impl WindowsResource {
 	/// Currently we only support numeric values; you have to look them up.
 	pub fn set_version_info(&mut self, field:VersionInfo, value:u64) -> &mut Self {
 		self.version_info.insert(field, value);
+
 		self
 	}
 
@@ -371,7 +389,9 @@ impl WindowsResource {
 	/// ```
 	pub fn set_manifest(&mut self, manifest:&str) -> &mut Self {
 		self.manifest_file = None;
+
 		self.manifest = Some(manifest.to_string());
+
 		self
 	}
 
@@ -383,7 +403,9 @@ impl WindowsResource {
 	/// [`set_icon()`]: #method.set_icon
 	pub fn set_manifest_file(&mut self, file:&str) -> &mut Self {
 		self.manifest_file = Some(file.to_string());
+
 		self.manifest = None;
+
 		self
 	}
 
@@ -394,7 +416,9 @@ impl WindowsResource {
 		// use UTF8 as an encoding
 		// this makes it easier since in rust all string are UTF8
 		writeln!(f, "#pragma code_page(65001)")?;
+
 		writeln!(f, "1 VERSIONINFO")?;
+
 		for (k, v) in self.version_info.iter() {
 			match *k {
 				VersionInfo::FILEVERSION | VersionInfo::PRODUCTVERSION => {
@@ -411,34 +435,47 @@ impl WindowsResource {
 				_ => writeln!(f, "{:?} {:#x}", k, v)?,
 			};
 		}
+
 		writeln!(f, "{{\nBLOCK \"StringFileInfo\"")?;
+
 		writeln!(f, "{{\nBLOCK \"{:04x}04b0\"\n{{", self.language)?;
+
 		for (k, v) in self.properties.iter() {
 			if !v.is_empty() {
 				writeln!(f, "VALUE \"{}\", \"{}\"", escape_string(k), escape_string(v))?;
 			}
 		}
+
 		writeln!(f, "}}\n}}")?;
 
 		writeln!(f, "BLOCK \"VarFileInfo\" {{")?;
+
 		writeln!(f, "VALUE \"Translation\", {:#x}, 0x04b0", self.language)?;
+
 		writeln!(f, "}}\n}}")?;
+
 		for icon in &self.icons {
 			writeln!(f, "{} ICON \"{}\"", escape_string(&icon.name_id), escape_string(&icon.path))?;
 		}
+
 		if let Some(e) = self.version_info.get(&VersionInfo::FILETYPE) {
 			if let Some(manf) = self.manifest.as_ref() {
 				writeln!(f, "{} 24", e)?;
+
 				writeln!(f, "{{")?;
+
 				for line in manf.lines() {
 					writeln!(f, "\" {} \"", escape_string(line.trim()))?;
 				}
+
 				writeln!(f, "}}")?;
 			} else if let Some(manf) = self.manifest_file.as_ref() {
 				writeln!(f, "{} 24 \"{}\"", e, escape_string(manf))?;
 			}
 		}
+
 		writeln!(f, "{}", self.append_rc_content)?;
+
 		Ok(())
 	}
 
@@ -450,6 +487,7 @@ impl WindowsResource {
 	/// yourself.
 	pub fn set_resource_file(&mut self, path:&str) -> &mut Self {
 		self.rc_file = Some(path.to_string());
+
 		self
 	}
 
@@ -488,7 +526,9 @@ impl WindowsResource {
 		if !(self.append_rc_content.ends_with('\n') || self.append_rc_content.is_empty()) {
 			self.append_rc_content.push('\n');
 		}
+
 		self.append_rc_content.push_str(content);
+
 		self
 	}
 
@@ -503,6 +543,7 @@ impl WindowsResource {
 	/// so that the cargo build script can link the compiled resource file.
 	pub fn compile(&self) -> io::Result<()> {
 		let output = PathBuf::from(env::var("OUT_DIR").unwrap_or_else(|_| ".".to_string()));
+
 		let rc = output.join("resource.rc");
 
 		if let Some(s) = self.rc_file.as_ref() {
@@ -527,6 +568,7 @@ impl WindowsResource {
 	/// so that the cargo build script can link the compiled resource file.
 	pub fn compile_for(&self, binaries:&[&str]) -> io::Result<()> {
 		let output = PathBuf::from(env::var("OUT_DIR").unwrap_or_else(|_| ".".to_string()));
+
 		let rc = output.join("resource.rc");
 
 		if let Some(s) = self.rc_file.as_ref() {
@@ -581,8 +623,11 @@ mod tests {
 	#[test]
 	fn string_escaping() {
 		assert_eq!(&escape_string(""), "");
+
 		assert_eq!(&escape_string("foo"), "foo");
+
 		assert_eq!(&escape_string(r#""Hello""#), r#"""Hello"""#);
+
 		assert_eq!(&escape_string(r"C:\Program Files\Foobar"), r"C:\\Program Files\\Foobar");
 	}
 }
