@@ -6,7 +6,7 @@ authors = [
 	"Tauri Programme within The Commons Conservancy",
 	"Max Resch <resch.max@gmail.com>",
 ]
-license = "MIT"
+license-file = "LICENSE"
 repository = "https://github.com/tauri-apps/winres"
 documentation = "https://docs.rs/tauri-winres/"
 
