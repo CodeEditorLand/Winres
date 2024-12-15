@@ -2,7 +2,7 @@ extern crate winapi;
 
 use std::ffi::CString;
 
-use winapi::um::winuser::{MessageBoxA, MB_ICONINFORMATION, MB_OK};
+use winapi::um::winuser::{MB_ICONINFORMATION, MB_OK, MessageBoxA};
 
 fn main() {
 	let lp_text = CString::new("Hello, world!").unwrap();
