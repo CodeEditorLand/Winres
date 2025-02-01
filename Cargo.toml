@@ -1,7 +1,7 @@
 [package]
 name = "tauri-winres"
 description = "Create and set windows icons and metadata for executables"
-version = "0.2.0"
+version = "0.3.0"
 authors = [
 	"Tauri Programme within The Commons Conservancy",
 	"Max Resch <resch.max@gmail.com>",
@@ -13,7 +13,7 @@ rust-version = "1.65"
 
 [dependencies]
 toml = "0.8"
-embed-resource = "2.1"
+embed-resource = "3"
 
 [dev-dependencies]
 winapi = { version = "0.3", features = ["winnt"] }
