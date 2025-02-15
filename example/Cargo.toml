@@ -1,23 +1,21 @@
-[package]
-name = "winres-example"
-description = "Example for winres"
-version = "0.1.3"
-authors = ["Max Resch <resch.max@gmail.com>"]
-license = "MIT"
-repository = "https://github.com/mxre/winres"
-documentation = "https://mxre.github.io/winres"
-build = "build.rs"
-
-[package.metadata.tauri-winres]
-LegalCopyright = "Copyright © 2016-2017"
-# this FileDescription overrides package.description
-FileDescription = "Example for \"winres\""
+[build-dependencies]
+tauri-winres = { path = ".." }
 
 [dependencies]
 winapi = { version = "0.3", features = [ "winuser" ] }
 
-# always use target build-dependencies for winres so that
-# it won't get pulled for non-windows OSs (saves them resources)
-[build-dependencies]
-# winres project
-tauri-winres = { path = ".." }
+[package]
+authors = ["Max Resch <resch.max@gmail.com>"]
+build = "build.rs"
+description = "Example for winres"
+documentation = "https://mxre.github.io/winres"
+license-file = "LICENSE"
+name = "winres-example"
+repository = "https://github.com/mxre/winres"
+version = "0.1.3"
+
+[package.metadata]
+
+[package.metadata.tauri-winres]
+FileDescription = "Example for \"winres\""
+LegalCopyright = "Copyright © 2016-2017"
