@@ -19,3 +19,7 @@ version = "0.1.3"
 [package.metadata.tauri-winres]
 FileDescription = "Example for \"winres\""
 LegalCopyright = "Copyright © 2016-2017"
+
+[[bin]]
+name = "app"
+path = "Source/main.rs"
